@@ -1,7 +1,9 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ChevronRight, BookOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface LearningObjective {
   id: string;
@@ -22,6 +24,13 @@ const priorityColors = {
 };
 
 export function RecommendedLOCard({ learningObjectives }: RecommendedLOCardProps) {
+  const navigate = useNavigate();
+
+  const handleLearningObjectiveClick = (lo: LearningObjective) => {
+    console.log('Navigating to learning objective:', lo.id);
+    navigate('/study', { state: { learningObjective: lo } });
+  };
+
   return (
     <Card className="rounded-xl shadow-md">
       <CardHeader className="pb-3">
@@ -42,6 +51,7 @@ export function RecommendedLOCard({ learningObjectives }: RecommendedLOCardProps
               <div
                 key={lo.id}
                 className="p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors cursor-pointer group"
+                onClick={() => handleLearningObjectiveClick(lo)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">

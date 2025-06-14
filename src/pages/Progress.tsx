@@ -1,29 +1,13 @@
+
 import { TopBar } from "@/components/TopBar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-const mockProgressData = [
-  { date: '2024-01-01', mastery: 20 },
-  { date: '2024-01-08', mastery: 35 },
-  { date: '2024-01-15', mastery: 45 },
-  { date: '2024-01-22', mastery: 60 },
-  { date: '2024-01-29', mastery: 75 },
-  { date: '2024-02-05', mastery: 82 },
-  { date: '2024-02-12', mastery: 78 },
-];
-
-const mockReviewLog = [
-  { date: '2024-02-12', questions: 23, accuracy: 87 },
-  { date: '2024-02-11', questions: 15, accuracy: 92 },
-  { date: '2024-02-10', questions: 31, accuracy: 79 },
-  { date: '2024-02-09', questions: 18, accuracy: 95 },
-  { date: '2024-02-08', questions: 27, accuracy: 84 },
-];
+import { mockProgressData, mockReviewSessions, mockUser } from "@/data/mockData";
 
 export default function Progress() {
   return (
     <div className="min-h-screen bg-background">
-      <TopBar title="Progress" streak={12} />
+      <TopBar title="Progress" streak={mockUser.streak} />
       
       <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Mastery Trend Chart */}
@@ -90,11 +74,12 @@ export default function Progress() {
                 {Array.from({ length: 35 }).map((_, i) => (
                   <div
                     key={i}
-                    className={`aspect-square rounded border min-h-[20px] sm:min-h-[24px] ${
+                    className={`aspect-square rounded border min-h-[20px] sm:min-h-[24px] cursor-pointer hover:scale-110 transition-transform ${
                       Math.random() > 0.3 
                         ? 'bg-primary/20 border-primary/30' 
                         : 'bg-muted border-border'
                     }`}
+                    onClick={() => console.log(`Clicked day ${i + 1}`)}
                   />
                 ))}
               </div>
@@ -121,17 +106,18 @@ export default function Progress() {
             </CardHeader>
             <CardContent className="px-4 sm:px-6">
               <div className="space-y-3">
-                {mockReviewLog.map((session) => (
+                {mockReviewSessions.map((session) => (
                   <div 
-                    key={session.date}
-                    className="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-border"
+                    key={session.id}
+                    className="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={() => console.log('Session details:', session)}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="font-medium text-sm sm:text-base truncate">
                         {new Date(session.date).toLocaleDateString()}
                       </div>
                       <div className="text-xs sm:text-sm text-ash">
-                        {session.questions} questions
+                        {session.questions} questions • {session.timeSpent}min
                       </div>
                     </div>
                     <div className="text-right ml-4">

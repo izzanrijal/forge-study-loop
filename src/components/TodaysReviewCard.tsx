@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, BookOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface TodaysReviewCardProps {
   dueCount: number;
@@ -10,8 +11,16 @@ interface TodaysReviewCardProps {
 }
 
 export function TodaysReviewCard({ dueCount, estimatedMinutes }: TodaysReviewCardProps) {
+  const navigate = useNavigate();
+
+  const handleStartReview = () => {
+    if (dueCount > 0) {
+      navigate('/study');
+    }
+  };
+
   return (
-    <Card className="rounded-xl shadow-md bg-card border-border">
+    <Card className="rounded-xl shadow-md bg-card border-border hover:shadow-lg transition-shadow cursor-pointer">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg text-foreground">Today's Review</CardTitle>
@@ -39,6 +48,7 @@ export function TodaysReviewCard({ dueCount, estimatedMinutes }: TodaysReviewCar
           className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground" 
           size="lg"
           disabled={dueCount === 0}
+          onClick={handleStartReview}
         >
           {dueCount > 0 ? 'Start Review Session' : 'No reviews due'}
         </Button>

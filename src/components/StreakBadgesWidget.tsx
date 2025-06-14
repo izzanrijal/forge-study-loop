@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 interface BadgeType {
   id: string;
@@ -16,10 +17,22 @@ interface StreakBadgesWidgetProps {
 }
 
 export function StreakBadgesWidget({ currentStreak, badges }: StreakBadgesWidgetProps) {
+  const navigate = useNavigate();
   const earnedBadges = badges.filter(badge => badge.earned);
+
+  const handleViewProgress = () => {
+    navigate('/progress');
+  };
+
+  const handleBadgeClick = (badge: BadgeType) => {
+    if (badge.earned) {
+      console.log('Badge details:', badge);
+      // Could show badge details modal in future
+    }
+  };
   
   return (
-    <Card className="rounded-xl shadow-md">
+    <Card className="rounded-xl shadow-md cursor-pointer hover:shadow-lg transition-shadow" onClick={handleViewProgress}>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Streak & Achievements</CardTitle>
         <CardDescription>
@@ -43,12 +56,16 @@ export function StreakBadgesWidget({ currentStreak, badges }: StreakBadgesWidget
               {badges.slice(0, 8).map((badge) => (
                 <div
                   key={badge.id}
-                  className={`aspect-square rounded-xl border-2 flex items-center justify-center text-lg transition-all ${
+                  className={`aspect-square rounded-xl border-2 flex items-center justify-center text-lg transition-all cursor-pointer hover:scale-105 ${
                     badge.earned
                       ? 'border-primary/20 bg-primary/10'
                       : 'border-border bg-muted opacity-50'
                   }`}
                   title={badge.earned ? badge.name : 'Locked'}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleBadgeClick(badge);
+                  }}
                 >
                   {badge.earned ? badge.icon : '🔒'}
                 </div>
