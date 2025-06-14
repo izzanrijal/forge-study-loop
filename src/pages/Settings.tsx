@@ -1,18 +1,21 @@
 
-import { TopBar } from "@/components/TopBar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Layout } from "@/components/Layout";
 
 export default function Settings() {
   return (
-    <div className="min-h-screen bg-background">
-      <TopBar title="Settings" />
-      
+    <Layout>
       <div className="p-6 max-w-2xl mx-auto space-y-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Manage your account and preferences</p>
+        </div>
+        
         {/* Account Settings */}
         <Card className="rounded-xl shadow-md">
           <CardHeader>
@@ -118,6 +121,6 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </Layout>
   );
 }

@@ -1,6 +1,4 @@
-
-import { TopBar } from "@/components/TopBar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { mockLearningObjectives, mockQuestions } from "@/data/mockData";
@@ -10,6 +8,7 @@ import { ReadingMode } from "@/components/study/ReadingMode";
 import { RepetitionTest } from "@/components/study/RepetitionTest";
 import { StudyProgress } from "@/components/study/StudyProgress";
 import { CompletionScreen } from "@/components/study/CompletionScreen";
+import { Layout } from "@/components/Layout";
 import type { StudyMode, StudyPhase } from "@/types/study";
 
 export default function Study() {
@@ -62,12 +61,10 @@ export default function Study() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <TopBar title={mode === 'study' ? "Study Session" : "Repetition Test"} />
-      
+    <Layout>
       <div className="p-6 max-w-4xl mx-auto">
         <div className="mb-6">
-          <Link to="/" className="inline-flex items-center gap-2 text-ash hover:text-foreground transition-colors">
+          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </Link>
@@ -115,7 +112,7 @@ export default function Study() {
               />
             ) : relatedQuestions.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-ash mb-4">No questions available for this learning objective.</p>
+                <p className="text-muted-foreground mb-4">No questions available for this learning objective.</p>
                 <Link to="/">
                   <button className="rounded-xl bg-primary hover:bg-primary/90 text-white px-6 py-2">
                     Return to Dashboard
@@ -126,6 +123,6 @@ export default function Study() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </Layout>
   );
 }

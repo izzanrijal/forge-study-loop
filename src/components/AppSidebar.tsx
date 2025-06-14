@@ -22,6 +22,8 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const navigationItems = [
   {
@@ -53,6 +55,24 @@ const navigationItems = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const { signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      });
+    }
+  };
 
   return (
     <Sidebar className="border-r border-border">
@@ -62,7 +82,7 @@ export function AppSidebar() {
             <BookOpen className="w-4 h-4 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="font-space-grotesk font-semibold text-lg">RecallForge</h2>
+            <h2 className="font-semibold text-lg">RecallForge</h2>
             <p className="text-xs text-muted-foreground">AI-Powered Learning</p>
           </div>
         </div>
@@ -70,7 +90,7 @@ export function AppSidebar() {
       
       <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-ash text-xs font-medium mb-3">
+          <SidebarGroupLabel className="text-muted-foreground text-xs font-medium mb-3">
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -97,12 +117,13 @@ export function AppSidebar() {
       <SidebarFooter className="p-4 border-t border-border">
         <Button 
           variant="ghost" 
-          className="w-full justify-start rounded-xl p-3 text-ash hover:text-foreground"
+          className="w-full justify-start rounded-xl p-3 text-muted-foreground hover:text-foreground"
+          onClick={handleSignOut}
         >
           <LogOut className="w-4 h-4 mr-3" />
           Log out
         </Button>
-        <div className="mt-3 text-xs text-ash">
+        <div className="mt-3 text-xs text-muted-foreground">
           Version 1.0.0 · <a href="#" className="hover:text-foreground transition-colors">Support</a>
         </div>
       </SidebarFooter>

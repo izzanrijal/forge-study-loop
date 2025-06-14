@@ -1,15 +1,18 @@
 
-import { TopBar } from "@/components/TopBar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mockProgressData, mockReviewSessions, mockUser } from "@/data/mockData";
+import { Layout } from "@/components/Layout";
 
 export default function Progress() {
   return (
-    <div className="min-h-screen bg-background">
-      <TopBar title="Progress" streak={mockUser.streak} />
-      
+    <Layout>
       <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Progress</h1>
+          <p className="text-muted-foreground">Track your learning journey</p>
+        </div>
+        
         {/* Mastery Trend Chart */}
         <Card className="rounded-xl shadow-md">
           <CardHeader className="pb-3">
@@ -137,6 +140,6 @@ export default function Progress() {
           </Card>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }
