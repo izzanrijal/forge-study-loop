@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
 type Tables = Database['public']['Tables'];
@@ -10,12 +11,12 @@ type LearningObjective = Tables['learning_objectives']['Row'];
 type Question = Tables['questions']['Row'];
 type StudySession = Tables['study_sessions']['Row'];
 
-// Hook to get user's PDFs
-export function usePDFs() {
+// Hook to get user's files (PDFs and other documents)
+export function useFiles() {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['pdfs', user?.id],
+    queryKey: ['files', user?.id],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
@@ -62,7 +63,8 @@ export function useQuestions(learningObjectiveId: string) {
       const { data, error } = await supabase
         .from('questions')
         .select('*')
-        .eq('learning_objective_id', learningObjectiveId);
+        .eq('learning_objective_id', learningObjectiveId)
+        .order('created_at', { ascending: true });
       
       if (error) throw error;
       return data as Question[];
@@ -123,24 +125,50 @@ export function useCreateStudySession() {
   });
 }
 
-// Hook to upload PDF
-export function useUploadPDF() {
+// Optimized file upload hook with better error handling and file type detection
+export function useUploadFile() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { toast } = useToast();
   
   return useMutation({
     mutationFn: async (file: File) => {
       if (!user) throw new Error('User not authenticated');
       
-      // Upload file to storage
+      // Detect file type and set appropriate content type
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      let contentType = file.type;
+      
+      if (!contentType || contentType === 'application/octet-stream') {
+        switch (fileExtension) {
+          case 'pdf':
+            contentType = 'application/pdf';
+            break;
+          case 'md':
+          case 'markdown':
+            contentType = 'text/markdown';
+            break;
+          case 'txt':
+            contentType = 'text/plain';
+            break;
+          default:
+            contentType = 'application/octet-stream';
+        }
+      }
+      
+      // Upload file to storage with optimized settings
       const fileName = `${user.id}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
-        .from('pdfs')
-        .upload(fileName, file);
+        .from('documents')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: contentType
+        });
       
       if (uploadError) throw uploadError;
       
-      // Create PDF record in database
+      // Create file record in database with file type detection
       const { data, error } = await supabase
         .from('pdfs')
         .insert({
@@ -153,10 +181,99 @@ export function useUploadPDF() {
         .single();
       
       if (error) throw error;
+      
+      // Trigger processing via edge function
+      const { error: processError } = await supabase.functions.invoke('process-document', {
+        body: { 
+          fileId: data.id,
+          fileName: file.name,
+          fileType: contentType,
+          filePath: fileName
+        }
+      });
+      
+      if (processError) {
+        console.warn('Processing trigger failed:', processError);
+        // Don't throw error here, let background processing handle it
+      }
+      
       return data;
     },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['files'] });
+      queryClient.invalidateQueries({ queryKey: ['learning_objectives'] });
+      
+      toast({
+        title: "Upload Successful",
+        description: `${data.filename} has been uploaded and is being processed.`,
+      });
+    },
+    onError: (error) => {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "There was an error uploading your file. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Hook to record study attempt with FSRS integration
+export function useRecordStudyAttempt() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async (attemptData: {
+      sessionId: string;
+      questionId: string;
+      selectedAnswer: string;
+      isCorrect: boolean;
+      responseTime: number;
+      difficultyRating: 'easy' | 'medium' | 'hard';
+    }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      // Record the study attempt
+      const { data: attempt, error: attemptError } = await supabase
+        .from('study_attempts')
+        .insert({
+          user_id: user.id,
+          session_id: attemptData.sessionId,
+          question_id: attemptData.questionId,
+          selected_answer: attemptData.selectedAnswer,
+          is_correct: attemptData.isCorrect,
+          response_time: attemptData.responseTime,
+          difficulty_rating: attemptData.difficultyRating,
+        })
+        .select()
+        .single();
+      
+      if (attemptError) throw attemptError;
+      
+      // Update FSRS card via edge function for spaced repetition
+      const { error: fsrsError } = await supabase.functions.invoke('update-fsrs-card', {
+        body: {
+          userId: user.id,
+          questionId: attemptData.questionId,
+          grade: attemptData.isCorrect ? 
+            (attemptData.difficultyRating === 'easy' ? 4 : 
+             attemptData.difficultyRating === 'medium' ? 3 : 2) : 1,
+          responseTime: attemptData.responseTime
+        }
+      });
+      
+      if (fsrsError) {
+        console.warn('FSRS update failed:', fsrsError);
+        // Don't throw error, continue with attempt recording
+      }
+      
+      return attempt;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pdfs'] });
+      queryClient.invalidateQueries({ queryKey: ['study_sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['due_questions_count'] });
     },
   });
 }
