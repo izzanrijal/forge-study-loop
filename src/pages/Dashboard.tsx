@@ -1,74 +1,183 @@
 
+import { Layout } from "@/components/Layout";
 import { TodaysReviewCard } from "@/components/TodaysReviewCard";
 import { RecommendedLOCard } from "@/components/RecommendedLOCard";
-import { StreakBadgesWidget } from "@/components/StreakBadgesWidget";
 import { UploadCard } from "@/components/UploadCard";
-import { Layout } from "@/components/Layout";
+import { StreakBadgesWidget } from "@/components/StreakBadgesWidget";
 import { EmptyState } from "@/components/EmptyState";
-import { useLearningObjectives, useDueQuestionsCount, useStudySessions } from "@/hooks/useRealData";
-import { mockBadges, mockUser } from "@/data/mockData";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus, BookOpen, Target, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useRealData } from "@/hooks/useRealData";
+import type { LearningObjective } from "@/types/study";
 
 export default function Dashboard() {
-  const { data: learningObjectives, isLoading: loLoadingLO } = useLearningObjectives();
-  const { data: dueQuestionsCount, isLoading: loadingDue } = useDueQuestionsCount();
-  const { data: studySessions, isLoading: loadingSessions } = useStudySessions();
+  const { 
+    learningObjectives, 
+    pdfs, 
+    userProfile, 
+    isLoading 
+  } = useRealData();
 
-  const estimatedReviewTime = Math.max(Math.ceil((dueQuestionsCount || 0) * 0.5), 1);
-  const hasLearningObjectives = learningObjectives && learningObjectives.length > 0;
-  const hasStudySessions = studySessions && studySessions.length > 0;
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="p-6">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="h-48 bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Transform database learning objectives to frontend format
+  const transformedLearningObjectives: LearningObjective[] = learningObjectives.map(lo => ({
+    id: lo.id,
+    title: lo.title,
+    description: lo.description || "",
+    priority: lo.priority,
+    masteryPercent: Math.round(lo.mastery_level * 100),
+    source: lo.pdfs?.filename || "Unknown Source",
+    pageRange: lo.page_range || "",
+    tags: []
+  }));
+
+  const hasData = pdfs.length > 0 || learningObjectives.length > 0;
+
+  if (!hasData) {
+    return (
+      <Layout>
+        <div className="p-6">
+          <EmptyState 
+            title="Welcome to RecallForge!"
+            description="Start your learning journey by uploading your first PDF document. We'll extract learning objectives and create personalized study sessions for you."
+            actionLabel="Upload Your First PDF"
+            actionLink="/upload"
+            icon={BookOpen}
+          />
+        </div>
+      </Layout>
+    );
+  }
+
+  const todaysReviews = transformedLearningObjectives.filter(lo => 
+    lo.masteryPercent < 80
+  ).slice(0, 3);
+
+  const recommendedLOs = transformedLearningObjectives
+    .filter(lo => lo.priority === "High" || lo.masteryPercent < 50)
+    .slice(0, 2);
 
   return (
     <Layout>
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Selamat datang kembali! Siap untuk belajar?</p>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">
+              Welcome back{userProfile?.full_name ? `, ${userProfile.full_name}` : ''}!
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Ready to continue your learning journey?
+            </p>
+          </div>
+          <Link to="/upload">
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
+              Upload PDF
+            </Button>
+          </Link>
         </div>
-        
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total PDFs</CardTitle>
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{pdfs.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Documents uploaded
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Learning Objectives</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{learningObjectives.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Topics to master
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Average Mastery</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {transformedLearningObjectives.length > 0 
+                  ? Math.round(transformedLearningObjectives.reduce((acc, lo) => acc + lo.masteryPercent, 0) / transformedLearningObjectives.length)
+                  : 0}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Across all topics
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Main Content */}
+          {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {loadingDue ? (
-              <Skeleton className="h-32 w-full rounded-xl" />
-            ) : (
-              <TodaysReviewCard 
-                dueCount={dueQuestionsCount || 0} 
-                estimatedMinutes={estimatedReviewTime} 
-              />
+            {/* Today's Reviews */}
+            {todaysReviews.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold">Today's Reviews</h2>
+                <div className="grid gap-4">
+                  {todaysReviews.map((lo) => (
+                    <TodaysReviewCard key={lo.id} learningObjective={lo} />
+                  ))}
+                </div>
+              </div>
             )}
-            
-            {loLoadingLO ? (
-              <Skeleton className="h-48 w-full rounded-xl" />
-            ) : hasLearningObjectives ? (
-              <RecommendedLOCard learningObjectives={learningObjectives} />
-            ) : (
-              <EmptyState 
-                type="learning-objectives"
-                title="Belum Ada Learning Objectives"
-                description="Upload dokumen PDF pertama Anda untuk mulai membuat learning objectives dan soal-soal latihan secara otomatis."
-              />
+
+            {/* Recommended Learning Objectives */}
+            {recommendedLOs.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold">Recommended for You</h2>
+                <div className="grid gap-4">
+                  {recommendedLOs.map((lo) => (
+                    <RecommendedLOCard key={lo.id} learningObjective={lo} />
+                  ))}
+                </div>
+              </div>
             )}
-            
-            <UploadCard />
           </div>
 
-          {/* Right Column - Sidebar Widgets */}
+          {/* Right Column */}
           <div className="space-y-6">
+            <UploadCard />
             <StreakBadgesWidget 
-              currentStreak={mockUser.streak} 
-              badges={mockBadges} 
+              streakCount={userProfile?.streak_count || 0}
+              totalMasteryPoints={userProfile?.total_mastery_points || 0}
             />
-            
-            {loadingSessions ? (
-              <Skeleton className="h-32 w-full rounded-xl" />
-            ) : !hasStudySessions ? (
-              <EmptyState 
-                type="study-sessions"
-                title="Mulai Perjalanan Belajar"
-                description="Belum ada sesi belajar. Mulai sesi pertama untuk melacak progress Anda."
-              />
-            ) : null}
           </div>
         </div>
       </div>

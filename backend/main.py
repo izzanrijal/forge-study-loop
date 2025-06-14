@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 
 from app.core.config import settings
-from app.api.routes import pdf, questions, study, auth, process
+from app.api.routes import pdf, questions, study, auth, process, email
 from app.core.database import get_db
 from app.services.ai_service import AIService
 from app.models.database import Base, engine
@@ -44,6 +44,7 @@ app.include_router(questions.router, prefix="/api/questions", tags=["Questions"]
 app.include_router(study.router, prefix="/api/study", tags=["Study"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(process.router, prefix="/api/process", tags=["Processing"])
+app.include_router(email.router, prefix="/api/email", tags=["Email"])
 
 @app.get("/")
 async def root():
