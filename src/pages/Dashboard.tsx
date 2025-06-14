@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Target, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useRealData } from "@/hooks/useRealData";
+import { useRealData, useDueQuestionsCount } from "@/hooks/useRealData";
 
 export default function Dashboard() {
   const { 
@@ -18,8 +18,10 @@ export default function Dashboard() {
     userProfile, 
     isLoading 
   } = useRealData();
+  
+  const { data: dueCount = 0, isLoading: dueLoading } = useDueQuestionsCount();
 
-  if (isLoading) {
+  if (isLoading || dueLoading) {
     return (
       <Layout>
         <div className="p-6">
@@ -66,10 +68,10 @@ export default function Dashboard() {
     tags: []
   }));
 
-  const todaysReviews = transformedLearningObjectives.filter(lo => 
-    lo.masteryPercent < 80
-  ).slice(0, 3);
+  // Calculate estimated review time (2 minutes per question)
+  const estimatedMinutes = Math.max(1, Math.round(dueCount * 2));
 
+  // Get recommended learning objectives (low mastery or high priority)
   const recommendedLOs = transformedLearningObjectives
     .filter(lo => lo.priority === "High" || lo.masteryPercent < 50)
     .slice(0, 2);
@@ -145,15 +147,14 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Today's Reviews */}
-            {todaysReviews.length > 0 && (
+            {/* Today's Reviews - Only show if there are due questions */}
+            {dueCount > 0 && (
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold">Today's Reviews</h2>
-                <div className="grid gap-4">
-                  {todaysReviews.map((lo) => (
-                    <TodaysReviewCard key={lo.id} />
-                  ))}
-                </div>
+                <TodaysReviewCard 
+                  dueCount={dueCount} 
+                  estimatedMinutes={estimatedMinutes}
+                />
               </div>
             )}
 
