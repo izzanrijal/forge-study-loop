@@ -30,6 +30,7 @@ export interface LearningObjective {
   last_reviewed?: string;
   created_at: string;
   updated_at: string;
+  pdfs?: { filename: string };
 }
 
 export interface StudySession {
@@ -44,6 +45,17 @@ export interface StudySession {
   started_at: string;
   completed_at?: string;
   created_at: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name?: string;
+  avatar_url?: string;
+  streak_count: number;
+  total_mastery_points: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // Hook to get user's PDFs
@@ -95,6 +107,28 @@ export function useLearningObjectives() {
   });
 }
 
+// Hook to get user profile
+export function useUserProfile() {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['user_profile', user?.id],
+    queryFn: async () => {
+      if (!user) throw new Error('User not authenticated');
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data as UserProfile;
+    },
+    enabled: !!user,
+  });
+}
+
 // Hook to get study sessions
 export function useStudySessions() {
   const { user } = useAuth();
@@ -114,6 +148,36 @@ export function useStudySessions() {
       return data as StudySession[];
     },
     enabled: !!user,
+  });
+}
+
+// Hook to update streak and mastery points
+export function useUpdateStreak() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  return useMutation({
+    mutationFn: async ({ streak_count, mastery_points }: { streak_count: number; mastery_points: number }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          streak_count,
+          total_mastery_points: mastery_points,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user_profile'] });
+    },
   });
 }
 
@@ -165,6 +229,22 @@ export function useUploadPDF() {
       });
     },
   });
+}
+
+// Main hook that combines all data
+export function useRealData() {
+  const { data: pdfs = [], isLoading: pdfsLoading } = usePDFs();
+  const { data: learningObjectives = [], isLoading: loLoading } = useLearningObjectives();
+  const { data: userProfile, isLoading: profileLoading } = useUserProfile();
+  const { data: studySessions = [], isLoading: sessionsLoading } = useStudySessions();
+  
+  return {
+    pdfs,
+    learningObjectives,
+    userProfile,
+    studySessions,
+    isLoading: pdfsLoading || loLoading || profileLoading || sessionsLoading,
+  };
 }
 
 // Hook to get due questions count

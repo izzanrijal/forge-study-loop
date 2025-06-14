@@ -1,30 +1,27 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-
-interface BadgeType {
-  id: string;
-  name: string;
-  description: string;
-  earned: boolean;
-  icon: string;
-}
+import { useBadges } from "@/hooks/useBadges";
+import { useUserProfile } from "@/hooks/useRealData";
 
 interface StreakBadgesWidgetProps {
-  currentStreak: number;
-  badges: BadgeType[];
+  streakCount?: number;
+  totalMasteryPoints?: number;
 }
 
-export function StreakBadgesWidget({ currentStreak, badges }: StreakBadgesWidgetProps) {
+export function StreakBadgesWidget({ streakCount, totalMasteryPoints }: StreakBadgesWidgetProps) {
   const navigate = useNavigate();
+  const { data: userProfile } = useUserProfile();
+  const { data: badges = [] } = useBadges();
+  
+  const currentStreak = streakCount ?? userProfile?.streak_count ?? 0;
   const earnedBadges = badges.filter(badge => badge.earned);
 
   const handleViewProgress = () => {
     navigate('/progress');
   };
 
-  const handleBadgeClick = (badge: BadgeType) => {
+  const handleBadgeClick = (badge: any) => {
     if (badge.earned) {
       console.log('Badge details:', badge);
       // Could show badge details modal in future
@@ -43,10 +40,10 @@ export function StreakBadgesWidget({ currentStreak, badges }: StreakBadgesWidget
         <div className="space-y-4">
           {/* Current Streak */}
           <div className="text-center p-4 bg-primary/5 rounded-xl">
-            <div className="text-2xl font-space-grotesk font-bold text-primary mb-1">
+            <div className="text-2xl font-bold text-primary mb-1">
               {currentStreak}
             </div>
-            <div className="text-sm text-ash">Day Streak</div>
+            <div className="text-sm text-muted-foreground">Day Streak</div>
           </div>
 
           {/* Badges Grid */}
@@ -71,7 +68,7 @@ export function StreakBadgesWidget({ currentStreak, badges }: StreakBadgesWidget
                 </div>
               ))}
             </div>
-            <div className="text-xs text-ash mt-2 text-center">
+            <div className="text-xs text-muted-foreground mt-2 text-center">
               {earnedBadges.length} of {badges.length} earned
             </div>
           </div>

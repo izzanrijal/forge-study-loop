@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Target, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useRealData } from "@/hooks/useRealData";
-import type { LearningObjective } from "@/types/study";
 
 export default function Dashboard() {
   const { 
@@ -37,18 +36,6 @@ export default function Dashboard() {
     );
   }
 
-  // Transform database learning objectives to frontend format
-  const transformedLearningObjectives: LearningObjective[] = learningObjectives.map(lo => ({
-    id: lo.id,
-    title: lo.title,
-    description: lo.description || "",
-    priority: lo.priority,
-    masteryPercent: Math.round(lo.mastery_level * 100),
-    source: lo.pdfs?.filename || "Unknown Source",
-    pageRange: lo.page_range || "",
-    tags: []
-  }));
-
   const hasData = pdfs.length > 0 || learningObjectives.length > 0;
 
   if (!hasData) {
@@ -66,6 +53,18 @@ export default function Dashboard() {
       </Layout>
     );
   }
+
+  // Transform database learning objectives to frontend format
+  const transformedLearningObjectives = learningObjectives.map(lo => ({
+    id: lo.id,
+    title: lo.title,
+    description: lo.description || "",
+    priority: lo.priority,
+    masteryPercent: Math.round(lo.mastery_level * 100),
+    source: lo.pdfs?.filename || "Unknown Source",
+    pageRange: lo.page_range || "",
+    tags: []
+  }));
 
   const todaysReviews = transformedLearningObjectives.filter(lo => 
     lo.masteryPercent < 80
@@ -152,7 +151,7 @@ export default function Dashboard() {
                 <h2 className="text-xl font-semibold">Today's Reviews</h2>
                 <div className="grid gap-4">
                   {todaysReviews.map((lo) => (
-                    <TodaysReviewCard key={lo.id} learningObjective={lo} />
+                    <TodaysReviewCard key={lo.id} />
                   ))}
                 </div>
               </div>
@@ -164,7 +163,7 @@ export default function Dashboard() {
                 <h2 className="text-xl font-semibold">Recommended for You</h2>
                 <div className="grid gap-4">
                   {recommendedLOs.map((lo) => (
-                    <RecommendedLOCard key={lo.id} learningObjective={lo} />
+                    <RecommendedLOCard key={lo.id} learningObjectives={[lo]} />
                   ))}
                 </div>
               </div>
