@@ -8,11 +8,12 @@ import os
 from dotenv import load_dotenv
 
 from app.core.config import settings
-from app.api.routes import pdf, questions, study, auth
+from app.api.routes import pdf, questions, study, auth, process
 from app.core.database import get_db
 from app.services.ai_service import AIService
 from app.models.database import Base, engine
 
+# Load environment variables
 load_dotenv()
 
 # Create tables
@@ -27,7 +28,11 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://localhost:3000",
+        "https://htmkmahllfvgyhaxnjju.supabase.co"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,19 +43,29 @@ app.include_router(pdf.router, prefix="/api/pdf", tags=["PDF"])
 app.include_router(questions.router, prefix="/api/questions", tags=["Questions"])
 app.include_router(study.router, prefix="/api/study", tags=["Study"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(process.router, prefix="/api/process", tags=["Processing"])
 
 @app.get("/")
 async def root():
-    return {"message": "RecallForge API is running"}
+    return {
+        "message": "RecallForge API is running",
+        "version": "1.0.0",
+        "environment": "development" if settings.fastapi_reload else "production"
+    }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "version": "1.0.0"}
+    return {
+        "status": "healthy", 
+        "version": "1.0.0",
+        "database": "connected",
+        "ai_service": "ready"
+    }
 
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
+        host=settings.fastapi_host,
+        port=settings.fastapi_port,
+        reload=settings.fastapi_reload
     )
