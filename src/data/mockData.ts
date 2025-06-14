@@ -139,8 +139,8 @@ export const mockProgressData: ProgressData[] = [
 export const mockQuestions: Question[] = [
   {
     id: 'q-1',
-    content: 'What is the purpose of the useEffect hook in React?',
-    answer: 'useEffect is used to perform side effects in functional components, such as data fetching, subscriptions, or manually changing the DOM.',
+    content: 'Based on the reading material, what is the primary purpose of the useEffect hook in React?',
+    answer: 'The useEffect hook is used to perform side effects in functional components, such as data fetching, subscriptions, or manually changing the DOM. It allows you to execute code after the component renders.',
     learningObjectiveId: 'lo-1',
     difficulty: 'medium',
     nextReviewDate: '2024-02-13',
@@ -149,10 +149,30 @@ export const mockQuestions: Question[] = [
   },
   {
     id: 'q-2',
-    content: 'Explain the difference between Promise.then() and async/await.',
-    answer: 'Promise.then() uses chaining with callbacks, while async/await provides a more synchronous-looking syntax for handling promises, making code more readable.',
-    learningObjectiveId: 'lo-3',
+    content: 'According to the reading, what is a common pitfall when using React Hooks that developers should avoid?',
+    answer: 'A common pitfall is creating infinite re-renders, often caused by incorrect dependency arrays in useEffect or improper state updates that trigger unnecessary re-renders.',
+    learningObjectiveId: 'lo-1',
     difficulty: 'hard',
+    nextReviewDate: '2024-02-14',
+    repetitionCount: 1,
+    lastReviewed: '2024-02-12'
+  },
+  {
+    id: 'q-3',
+    content: 'From the reading material, explain the relationship between useState and functional components.',
+    answer: 'useState allows you to add state to functional components, which previously could only be achieved using class components. It provides a way to store and update values that persist between re-renders.',
+    learningObjectiveId: 'lo-1',
+    difficulty: 'easy',
+    nextReviewDate: '2024-02-13',
+    repetitionCount: 2,
+    lastReviewed: '2024-02-11'
+  },
+  {
+    id: 'q-4',
+    content: 'Based on the database reading, what is the main goal of database normalization?',
+    answer: 'Database normalization aims to reduce data redundancy and improve data integrity by organizing data into separate, related tables following specific normal forms.',
+    learningObjectiveId: 'lo-2',
+    difficulty: 'medium',
     nextReviewDate: '2024-02-14',
     repetitionCount: 1,
     lastReviewed: '2024-02-12'
