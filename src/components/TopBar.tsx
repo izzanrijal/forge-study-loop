@@ -1,46 +1,73 @@
 
-import { useState } from "react";
+import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Settings } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
-interface TopBarProps {
-  title: string;
-  streak?: number;
-}
+export function TopBar() {
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
 
-export function TopBar({ title, streak = 0 }: TopBarProps) {
-  const [isDark, setIsDark] = useState(false);
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out.",
+      });
+    }
+  };
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
+  const getUserInitials = () => {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name
+        .split(' ')
+        .map((name: string) => name[0])
+        .join('')
+        .toUpperCase();
+    }
+    return user?.email?.[0]?.toUpperCase() || 'U';
   };
 
   return (
-    <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border">
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-4">
-          <SidebarTrigger className="lg:hidden" />
-          <h1 className="text-xl font-space-grotesk font-semibold">{title}</h1>
+    <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-14 items-center justify-between px-4">
+        <div className="font-semibold text-lg">
+          RecallForge
         </div>
         
         <div className="flex items-center gap-3">
-          {streak > 0 && (
-            <Badge variant="secondary" className="bg-primary/10 text-primary rounded-xl px-3 py-1">
-              🔥 {streak} day streak
-            </Badge>
-          )}
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleTheme}
-            className="rounded-xl"
-          >
-            <Settings className="w-4 h-4" />
+          <Button variant="ghost" size="sm" className="relative">
+            <Bell className="h-4 w-4" />
+            <span className="sr-only">Notifications</span>
           </Button>
+          
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={user?.user_metadata?.avatar_url} />
+              <AvatarFallback className="text-xs">
+                {getUserInitials()}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="hidden md:block text-sm">
+              <div className="font-medium">
+                {user?.user_metadata?.full_name || user?.email}
+              </div>
+            </div>
+            
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4" />
+              <span className="sr-only">Sign out</span>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
