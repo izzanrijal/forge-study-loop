@@ -1,11 +1,10 @@
-
 import { TopBar } from "@/components/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, BookOpen, Clock } from "lucide-react";
+import { ArrowLeft, BookOpen } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { mockLearningObjectives, mockQuestions } from "@/data/mockData";
 import { useState } from "react";
@@ -17,22 +16,11 @@ export default function Study() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [phase, setPhase] = useState<StudyPhase>('reading');
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
-  const [readingTime, setReadingTime] = useState(0);
   
   // Get learning objective from navigation state or use default
   const learningObjective = location.state?.learningObjective || mockLearningObjectives[0];
   const relatedQuestions = mockQuestions.filter(q => q.learningObjectiveId === learningObjective.id);
   const currentQuestion = relatedQuestions[currentQuestionIndex];
-
-  // Start reading timer when component mounts
-  useState(() => {
-    const timer = setInterval(() => {
-      if (phase === 'reading') {
-        setReadingTime(prev => prev + 1);
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  });
 
   const handleFinishReading = () => {
     setPhase('question');
@@ -52,16 +40,9 @@ export default function Study() {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer('');
       setPhase('reading');
-      setReadingTime(0);
     } else {
       setPhase('completed');
     }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -94,12 +75,6 @@ export default function Study() {
                 <Badge variant="outline" className="rounded-xl">
                   {currentQuestionIndex + 1} of {relatedQuestions.length}
                 </Badge>
-                {phase === 'reading' && (
-                  <Badge variant="outline" className="rounded-xl flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {formatTime(readingTime)}
-                  </Badge>
-                )}
               </div>
             </div>
           </CardHeader>
