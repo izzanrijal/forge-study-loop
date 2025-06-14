@@ -7,15 +7,19 @@ export default function Upload() {
     <div className="min-h-screen bg-background">
       <TopBar title="Upload PDF" streak={12} />
       
-      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">Upload Learning Materials</h1>
-          <p className="text-muted-foreground">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 sm:mb-3 text-center sm:text-left">
+            Upload Learning Materials
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground text-center sm:text-left leading-relaxed">
             Upload your PDF documents to generate adaptive spaced-repetition questions and study materials.
           </p>
         </div>
         
-        <UploadCard />
+        <div className="w-full">
+          <UploadCard />
+        </div>
       </div>
     </div>
   );
