@@ -6,8 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
+interface Question {
+  id: string;
+  question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_answer: string;
+  explanation?: string;
+}
+
 interface RepetitionTestProps {
-  questions: any[];
+  questions: Question[];
   currentQuestionIndex: number;
   onAnswerSubmit: (answer: string) => void;
   onDifficultyResponse: (difficulty: 'easy' | 'medium' | 'hard') => void;
@@ -37,7 +48,7 @@ export function RepetitionTest({
       {/* Progress Bar */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-ash">Question Progress</span>
+          <span className="text-muted-foreground">Question Progress</span>
           <span className="font-medium">{currentQuestionIndex + 1} of {questions.length}</span>
         </div>
         <Progress value={progress} className="h-2" />
@@ -51,7 +62,7 @@ export function RepetitionTest({
               Question {currentQuestionIndex + 1}
             </h3>
             <p className="text-foreground leading-relaxed text-lg mb-6">
-              {currentQuestion.content}
+              {currentQuestion.question_text}
             </p>
 
             <div className="space-y-4">
@@ -63,30 +74,30 @@ export function RepetitionTest({
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50">
                   <RadioGroupItem value="a" id="option-a" />
                   <Label htmlFor="option-a" className="flex-1 cursor-pointer">
-                    Option A: This is the first possible answer choice
+                    A: {currentQuestion.option_a}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50">
                   <RadioGroupItem value="b" id="option-b" />
                   <Label htmlFor="option-b" className="flex-1 cursor-pointer">
-                    Option B: This is the second possible answer choice
+                    B: {currentQuestion.option_b}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50">
                   <RadioGroupItem value="c" id="option-c" />
                   <Label htmlFor="option-c" className="flex-1 cursor-pointer">
-                    Option C: This is the third possible answer choice
+                    C: {currentQuestion.option_c}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50">
                   <RadioGroupItem value="d" id="option-d" />
                   <Label htmlFor="option-d" className="flex-1 cursor-pointer">
-                    Option D: This is the fourth possible answer choice
+                    D: {currentQuestion.option_d}
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border border-ash/30 hover:bg-muted/50">
+                <div className="flex items-center space-x-2 p-3 rounded-lg border border-muted hover:bg-muted/50">
                   <RadioGroupItem value="unknown" id="option-unknown" />
-                  <Label htmlFor="option-unknown" className="flex-1 cursor-pointer text-ash">
+                  <Label htmlFor="option-unknown" className="flex-1 cursor-pointer text-muted-foreground">
                     I don't know the answer
                   </Label>
                 </div>
@@ -95,10 +106,14 @@ export function RepetitionTest({
 
             {phase === 'answered' && (
               <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                <h4 className="font-semibold mb-2 text-green-800 dark:text-green-200">Correct Answer</h4>
-                <p className="text-green-700 dark:text-green-300 leading-relaxed">
-                  {currentQuestion.answer}
-                </p>
+                <h4 className="font-semibold mb-2 text-green-800 dark:text-green-200">
+                  Correct Answer: {currentQuestion.correct_answer.toUpperCase()}
+                </h4>
+                {currentQuestion.explanation && (
+                  <p className="text-green-700 dark:text-green-300 leading-relaxed">
+                    {currentQuestion.explanation}
+                  </p>
+                )}
               </div>
             )}
           </div>

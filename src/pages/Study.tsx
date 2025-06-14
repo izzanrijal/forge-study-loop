@@ -1,15 +1,19 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { mockLearningObjectives, mockQuestions } from "@/data/mockData";
 import { useState } from "react";
 import { StudyModeSelector } from "@/components/study/StudyModeSelector";
 import { ReadingMode } from "@/components/study/ReadingMode";
 import { RepetitionTest } from "@/components/study/RepetitionTest";
 import { StudyProgress } from "@/components/study/StudyProgress";
 import { CompletionScreen } from "@/components/study/CompletionScreen";
+import { EmptyState } from "@/components/EmptyState";
 import { Layout } from "@/components/Layout";
+import { useRealData } from "@/hooks/useRealData";
+import { useQuestions } from "@/hooks/useSupabaseData";
 import type { StudyMode, StudyPhase } from "@/types/study";
+import { BookOpen } from "lucide-react";
 
 export default function Study() {
   const location = useLocation();
@@ -19,10 +23,82 @@ export default function Study() {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [testResults, setTestResults] = useState<any>(null);
   
-  // Get learning objective from navigation state or use default
-  const learningObjective = location.state?.learningObjective || mockLearningObjectives[0];
-  const relatedQuestions = mockQuestions.filter(q => q.learningObjectiveId === learningObjective.id);
-  const currentQuestion = relatedQuestions[currentQuestionIndex];
+  // Get real data from database
+  const { learningObjectives, isLoading } = useRealData();
+  
+  // Get learning objective from navigation state or use first available
+  const learningObjective = location.state?.learningObjective || learningObjectives[0];
+  
+  // Get questions for the selected learning objective
+  const { data: questions = [], isLoading: questionsLoading } = useQuestions(
+    learningObjective?.id || ''
+  );
+  
+  const currentQuestion = questions[currentQuestionIndex];
+
+  // Show loading state
+  if (isLoading || questionsLoading) {
+    return (
+      <Layout>
+        <div className="p-6">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-96 bg-gray-200 rounded-lg"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show empty state if no learning objectives exist
+  if (!learningObjectives.length) {
+    return (
+      <Layout>
+        <div className="p-6 max-w-4xl mx-auto">
+          <div className="mb-6">
+            <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
+            </Link>
+          </div>
+          
+          <EmptyState 
+            title="No Learning Objectives Available"
+            description="You need to upload a PDF document first to create learning objectives and start studying."
+            actionLabel="Upload Your First PDF"
+            actionLink="/upload"
+            icon={BookOpen}
+            type="upload"
+          />
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show empty state if no questions available for the learning objective
+  if (learningObjective && questions.length === 0) {
+    return (
+      <Layout>
+        <div className="p-6 max-w-4xl mx-auto">
+          <div className="mb-6">
+            <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
+            </Link>
+          </div>
+          
+          <EmptyState 
+            title="No Questions Available"
+            description={`No questions have been generated for "${learningObjective.title}" yet. Questions are created automatically during PDF processing.`}
+            actionLabel="Go to Dashboard"
+            actionLink="/"
+            icon={BookOpen}
+            type="general"
+          />
+        </div>
+      </Layout>
+    );
+  }
 
   const handleModeSelect = (selectedMode: StudyMode) => {
     setMode(selectedMode);
@@ -41,7 +117,7 @@ export default function Study() {
   const handleDifficultyResponse = (difficulty: 'easy' | 'medium' | 'hard') => {
     console.log(`User rated question as: ${difficulty}, answered: ${selectedAnswer}`);
     
-    if (currentQuestionIndex < relatedQuestions.length - 1) {
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer('');
       setPhase(mode === 'study' ? 'reading' : 'question');
@@ -49,8 +125,8 @@ export default function Study() {
       // Calculate results for test mode
       if (mode === 'test') {
         setTestResults({
-          totalQuestions: relatedQuestions.length,
-          correctAnswers: Math.floor(relatedQuestions.length * 0.8), // Mock data
+          totalQuestions: questions.length,
+          correctAnswers: Math.floor(questions.length * 0.8), // Mock calculation
           accuracy: 80,
           timeSpent: 900, // 15 minutes
           masteryGained: 12
@@ -76,7 +152,7 @@ export default function Study() {
             <StudyProgress 
               learningObjective={learningObjective}
               currentIndex={currentQuestionIndex}
-              total={mode === 'study' ? relatedQuestions.length : relatedQuestions.length}
+              total={questions.length}
               mode={mode}
             />
           </div>
@@ -88,7 +164,7 @@ export default function Study() {
               <StudyModeSelector 
                 learningObjective={learningObjective}
                 onModeSelect={handleModeSelect}
-                availableQuestions={relatedQuestions.length}
+                availableQuestions={questions.length}
               />
             )}
 
@@ -104,21 +180,12 @@ export default function Study() {
               />
             ) : (phase === 'question' || phase === 'answered') && currentQuestion ? (
               <RepetitionTest 
-                questions={relatedQuestions}
+                questions={questions}
                 currentQuestionIndex={currentQuestionIndex}
                 onAnswerSubmit={handleAnswerSubmit}
                 onDifficultyResponse={handleDifficultyResponse}
                 phase={phase as 'question' | 'answered'}
               />
-            ) : relatedQuestions.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No questions available for this learning objective.</p>
-                <Link to="/">
-                  <button className="rounded-xl bg-primary hover:bg-primary/90 text-white px-6 py-2">
-                    Return to Dashboard
-                  </button>
-                </Link>
-              </div>
             ) : null}
           </CardContent>
         </Card>
