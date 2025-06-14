@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-interface Badge as BadgeType {
+interface BadgeType {
   id: string;
   name: string;
   description: string;
