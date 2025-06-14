@@ -1,94 +1,91 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
+/* RecallForge Design System - Neutral, analytical color palette */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Light theme - Porcelain base */
+    --background: 245 246 247; /* #F5F6F7 - Porcelain */
+    --foreground: 32 34 37; /* #202225 - Graphite */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 255 255 255; /* Pure white for cards */
+    --card-foreground: 32 34 37;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 255 255 255;
+    --popover-foreground: 32 34 37;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 77 89 106; /* #4D596A - Cool Gray */
+    --primary-foreground: 255 255 255;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 245 246 247;
+    --secondary-foreground: 77 89 106;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 245 246 247;
+    --muted-foreground: 139 147 158; /* #8B939E - Ash */
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 245 246 247;
+    --accent-foreground: 77 89 106;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 220 38 38;
+    --destructive-foreground: 255 255 255;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 226 232 240;
+    --input: 226 232 240;
+    --ring: 77 89 106;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* xl-rounded corners */
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 255 255 255;
+    --sidebar-foreground: 32 34 37;
+    --sidebar-primary: 77 89 106;
+    --sidebar-primary-foreground: 255 255 255;
+    --sidebar-accent: 245 246 247;
+    --sidebar-accent-foreground: 77 89 106;
+    --sidebar-border: 226 232 240;
+    --sidebar-ring: 77 89 106;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark theme - Graphite base */
+    --background: 32 34 37; /* #202225 - Graphite */
+    --foreground: 245 246 247; /* #F5F6F7 - Porcelain */
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 43 45 49; /* Slightly lighter than background */
+    --card-foreground: 245 246 247;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 43 45 49;
+    --popover-foreground: 245 246 247;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 77 89 106; /* #4D596A - Cool Gray */
+    --primary-foreground: 245 246 247;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 43 45 49;
+    --secondary-foreground: 139 147 158;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 43 45 49;
+    --muted-foreground: 139 147 158; /* #8B939E - Ash */
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 43 45 49;
+    --accent-foreground: 139 147 158;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 239 68 68;
+    --destructive-foreground: 245 246 247;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 54 57 63;
+    --input: 54 57 63;
+    --ring: 77 89 106;
+
+    --sidebar-background: 32 34 37;
+    --sidebar-foreground: 245 246 247;
+    --sidebar-primary: 77 89 106;
+    --sidebar-primary-foreground: 245 246 247;
+    --sidebar-accent: 43 45 49;
+    --sidebar-accent-foreground: 139 147 158;
+    --sidebar-border: 54 57 63;
+    --sidebar-ring: 77 89 106;
   }
 }
 
@@ -98,6 +95,28 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-space-grotesk;
+  }
+}
+
+@layer utilities {
+  .text-ash {
+    color: #8B939E;
+  }
+  
+  .bg-porcelain {
+    background-color: #F5F6F7;
+  }
+  
+  .bg-graphite {
+    background-color: #202225;
+  }
+  
+  .bg-cool-gray {
+    background-color: #4D596A;
   }
 }
