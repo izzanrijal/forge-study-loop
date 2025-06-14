@@ -11,20 +11,20 @@ interface TodaysReviewCardProps {
 
 export function TodaysReviewCard({ dueCount, estimatedMinutes }: TodaysReviewCardProps) {
   return (
-    <Card className="rounded-xl shadow-md bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+    <Card className="rounded-xl shadow-md bg-card border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Today's Review</CardTitle>
-          <Badge variant="secondary" className="bg-primary text-primary-foreground rounded-xl">
+          <CardTitle className="text-lg text-foreground">Today's Review</CardTitle>
+          <Badge variant="secondary" className="bg-primary/10 text-primary rounded-xl">
             {dueCount} due
           </Badge>
         </div>
-        <CardDescription>
+        <CardDescription className="text-muted-foreground">
           Questions ready for spaced repetition
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-4 text-sm text-ash">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
             <span>~{estimatedMinutes} min</span>
@@ -36,7 +36,7 @@ export function TodaysReviewCard({ dueCount, estimatedMinutes }: TodaysReviewCar
         </div>
         
         <Button 
-          className="w-full rounded-xl bg-primary hover:bg-primary/90" 
+          className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground" 
           size="lg"
           disabled={dueCount === 0}
         >
