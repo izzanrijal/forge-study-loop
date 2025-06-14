@@ -2,6 +2,7 @@
 import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,8 +40,11 @@ export function TopBar() {
   return (
     <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center justify-between px-4">
-        <div className="font-semibold text-lg">
-          RecallForge
+        <div className="flex items-center gap-3">
+          <SidebarTrigger className="md:hidden" />
+          <div className="font-semibold text-lg">
+            RecallForge
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
@@ -57,7 +61,7 @@ export function TopBar() {
               </AvatarFallback>
             </Avatar>
             
-            <div className="hidden md:block text-sm">
+            <div className="hidden sm:block text-sm">
               <div className="font-medium">
                 {user?.user_metadata?.full_name || user?.email}
               </div>
