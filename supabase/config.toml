@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.update-fsrs-card]
 verify_jwt = false
+
+[functions.regenerate-questions]
+verify_jwt = false
