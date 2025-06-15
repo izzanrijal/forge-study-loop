@@ -9,6 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      email_reminders: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          learning_objective_id: string | null
+          reminder_type: string
+          scheduled_for: string
+          sent_at: string | null
+          test_token: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          learning_objective_id?: string | null
+          reminder_type?: string
+          scheduled_for: string
+          sent_at?: string | null
+          test_token?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          learning_objective_id?: string | null
+          reminder_type?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          test_token?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_reminders_learning_objective_id_fkey"
+            columns: ["learning_objective_id"]
+            isOneToOne: false
+            referencedRelation: "learning_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fsrs_cards: {
         Row: {
           created_at: string | null
@@ -212,6 +256,41 @@ export type Database = {
         }
         Relationships: []
       }
+      question_pools: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          learning_objective_id: string | null
+          session_type: string
+          used_question_ids: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          learning_objective_id?: string | null
+          session_type: string
+          used_question_ids?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          learning_objective_id?: string | null
+          session_type?: string
+          used_question_ids?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_pools_learning_objective_id_fkey"
+            columns: ["learning_objective_id"]
+            isOneToOne: false
+            referencedRelation: "learning_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questions: {
         Row: {
           correct_answer: string
@@ -329,6 +408,7 @@ export type Database = {
       study_sessions: {
         Row: {
           accuracy: number | null
+          anonymous_mode: boolean | null
           completed_at: string | null
           correct_answers: number | null
           created_at: string | null
@@ -336,12 +416,14 @@ export type Database = {
           mastery_gained: number | null
           session_type: Database["public"]["Enums"]["session_type"]
           started_at: string | null
+          test_token: string | null
           time_spent: number | null
           total_questions: number
           user_id: string
         }
         Insert: {
           accuracy?: number | null
+          anonymous_mode?: boolean | null
           completed_at?: string | null
           correct_answers?: number | null
           created_at?: string | null
@@ -349,12 +431,14 @@ export type Database = {
           mastery_gained?: number | null
           session_type: Database["public"]["Enums"]["session_type"]
           started_at?: string | null
+          test_token?: string | null
           time_spent?: number | null
           total_questions: number
           user_id: string
         }
         Update: {
           accuracy?: number | null
+          anonymous_mode?: boolean | null
           completed_at?: string | null
           correct_answers?: number | null
           created_at?: string | null
@@ -362,6 +446,7 @@ export type Database = {
           mastery_gained?: number | null
           session_type?: Database["public"]["Enums"]["session_type"]
           started_at?: string | null
+          test_token?: string | null
           time_spent?: number | null
           total_questions?: number
           user_id?: string
@@ -381,7 +466,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_due_email_reminders: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          learning_objective_id: string
+          learning_objective_title: string
+          test_token: string
+          user_id: string
+        }[]
+      }
+      mark_email_sent: {
+        Args: { reminder_id: string }
+        Returns: undefined
+      }
+      schedule_study_reminder: {
+        Args: {
+          p_user_id: string
+          p_email: string
+          p_learning_objective_id: string
+          p_hours_delay?: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       difficulty_level: "easy" | "medium" | "hard"
