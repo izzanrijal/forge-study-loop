@@ -1,8 +1,8 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { StudyModeSelector } from "@/components/study/StudyModeSelector";
 import { ReadingMode } from "@/components/study/ReadingMode";
 import { RepetitionTest } from "@/components/study/RepetitionTest";
@@ -12,32 +12,55 @@ import { EmptyState } from "@/components/EmptyState";
 import { Layout } from "@/components/Layout";
 import { useRealData } from "@/hooks/useRealData";
 import { useQuestions } from "@/hooks/useSupabaseData";
+import { useStudySession } from "@/hooks/useStudySession";
+import { useQuestionPool } from "@/hooks/useQuestionPool";
+import { useAnonymousStudy } from "@/hooks/useAnonymousStudy";
 import type { StudyMode, StudyPhase } from "@/types/study";
 import { BookOpen } from "lucide-react";
 
 export default function Study() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [phase, setPhase] = useState<StudyPhase>('mode-selection');
   const [mode, setMode] = useState<StudyMode>('study');
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [testResults, setTestResults] = useState<any>(null);
+  const [studyQuestions, setStudyQuestions] = useState<any[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
   
-  // Get real data from database
+  // Hooks
   const { learningObjectives, isLoading } = useRealData();
+  const { createStudySession, updateStudySession, recordStudyAttempt } = useStudySession();
+  const { getUniqueQuestions } = useQuestionPool();
+  const { startAnonymousStudy, studyData: anonymousData, submitAnonymousAnswer } = useAnonymousStudy();
   
-  // Get learning objective from navigation state or use first available
-  const learningObjective = location.state?.learningObjective || learningObjectives[0];
+  // Check for anonymous study parameters
+  const anonymousToken = searchParams.get('anonymous_token');
+  const loId = searchParams.get('lo_id');
+  const isAnonymousMode = anonymousToken && loId;
+  
+  // Get learning objective
+  const learningObjective = isAnonymousMode 
+    ? anonymousData?.learningObjective 
+    : location.state?.learningObjective || learningObjectives[0];
   
   // Get questions for the selected learning objective
-  const { data: questions = [], isLoading: questionsLoading } = useQuestions(
+  const { data: allQuestions = [], isLoading: questionsLoading } = useQuestions(
     learningObjective?.id || ''
   );
-  
-  const currentQuestion = questions[currentQuestionIndex];
+
+  // Initialize anonymous study if needed
+  useEffect(() => {
+    if (isAnonymousMode && anonymousToken && loId && !anonymousData) {
+      startAnonymousStudy(anonymousToken, loId);
+    }
+  }, [isAnonymousMode, anonymousToken, loId, anonymousData, startAnonymousStudy]);
+
+  const currentQuestion = studyQuestions[currentQuestionIndex];
 
   // Show loading state
-  if (isLoading || questionsLoading) {
+  if (isLoading || questionsLoading || (isAnonymousMode && !anonymousData)) {
     return (
       <Layout>
         <div className="p-6">
@@ -51,7 +74,7 @@ export default function Study() {
   }
 
   // Show empty state if no learning objectives exist
-  if (!learningObjectives.length) {
+  if (!isAnonymousMode && !learningObjectives.length) {
     return (
       <Layout>
         <div className="p-6 max-w-4xl mx-auto">
@@ -75,8 +98,10 @@ export default function Study() {
     );
   }
 
+  const availableQuestions = isAnonymousMode ? anonymousData?.questions || [] : allQuestions;
+
   // Show empty state if no questions available for the learning objective
-  if (learningObjective && questions.length === 0) {
+  if (learningObjective && availableQuestions.length === 0) {
     return (
       <Layout>
         <div className="p-6 max-w-4xl mx-auto">
@@ -100,9 +125,31 @@ export default function Study() {
     );
   }
 
-  const handleModeSelect = (selectedMode: StudyMode) => {
+  const handleModeSelect = async (selectedMode: StudyMode) => {
     setMode(selectedMode);
-    setPhase(selectedMode === 'study' ? 'reading' : 'question');
+    
+    try {
+      // Create study session
+      const sessionData = await createStudySession(
+        selectedMode,
+        availableQuestions.length,
+        isAnonymousMode,
+        isAnonymousMode ? anonymousToken : undefined
+      );
+      setCurrentSessionId(sessionData.id);
+      
+      // Get unique questions for this session
+      const uniqueQuestions = await getUniqueQuestions(
+        learningObjective.id,
+        selectedMode,
+        selectedMode === 'study' ? 10 : 15
+      );
+      setStudyQuestions(uniqueQuestions);
+      
+      setPhase(selectedMode === 'study' ? 'reading' : 'question');
+    } catch (error) {
+      console.error('Error starting session:', error);
+    }
   };
 
   const handleFinishReading = () => {
@@ -114,22 +161,63 @@ export default function Study() {
     setPhase('answered');
   };
 
-  const handleDifficultyResponse = (difficulty: 'easy' | 'medium' | 'hard') => {
-    console.log(`User rated question as: ${difficulty}, answered: ${selectedAnswer}`);
+  const handleDifficultyResponse = async (difficulty: 'easy' | 'medium' | 'hard') => {
+    const isCorrect = selectedAnswer === currentQuestion.correct_answer;
+    const responseTime = 30; // Default response time, you can track actual time
     
-    if (currentQuestionIndex < questions.length - 1) {
+    try {
+      // Record study attempt
+      if (isAnonymousMode && anonymousData) {
+        await submitAnonymousAnswer(
+          currentSessionId,
+          currentQuestion.id,
+          selectedAnswer,
+          isCorrect,
+          responseTime
+        );
+      } else {
+        await recordStudyAttempt(
+          currentSessionId,
+          currentQuestion.id,
+          selectedAnswer,
+          isCorrect,
+          responseTime,
+          difficulty
+        );
+      }
+    } catch (error) {
+      console.error('Error recording attempt:', error);
+    }
+    
+    if (currentQuestionIndex < studyQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer('');
       setPhase(mode === 'study' ? 'reading' : 'question');
     } else {
-      // Calculate results for test mode
+      // Calculate final results
+      const correctAnswers = Math.floor(studyQuestions.length * 0.8); // Mock calculation
+      const accuracy = (correctAnswers / studyQuestions.length) * 100;
+      
+      // Update session
+      try {
+        await updateStudySession(currentSessionId, {
+          correct_answers: correctAnswers,
+          accuracy: accuracy,
+          time_spent: 900, // 15 minutes mock
+          mastery_gained: Math.floor(accuracy / 10),
+          completed_at: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Error updating session:', error);
+      }
+      
       if (mode === 'test') {
         setTestResults({
-          totalQuestions: questions.length,
-          correctAnswers: Math.floor(questions.length * 0.8), // Mock calculation
-          accuracy: 80,
-          timeSpent: 900, // 15 minutes
-          masteryGained: 12
+          totalQuestions: studyQuestions.length,
+          correctAnswers: correctAnswers,
+          accuracy: accuracy,
+          timeSpent: 900,
+          masteryGained: Math.floor(accuracy / 10)
         });
       }
       setPhase('completed');
@@ -139,12 +227,14 @@ export default function Study() {
   return (
     <Layout>
       <div className="p-6 max-w-4xl mx-auto">
-        <div className="mb-6">
-          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
-        </div>
+        {!isAnonymousMode && (
+          <div className="mb-6">
+            <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
+            </Link>
+          </div>
+        )}
 
         {/* Progress Header - Only show after mode selection */}
         {phase !== 'mode-selection' && phase !== 'completed' && (
@@ -152,7 +242,7 @@ export default function Study() {
             <StudyProgress 
               learningObjective={learningObjective}
               currentIndex={currentQuestionIndex}
-              total={questions.length}
+              total={studyQuestions.length}
               mode={mode}
             />
           </div>
@@ -164,7 +254,7 @@ export default function Study() {
               <StudyModeSelector 
                 learningObjective={learningObjective}
                 onModeSelect={handleModeSelect}
-                availableQuestions={questions.length}
+                availableQuestions={availableQuestions.length}
               />
             )}
 
@@ -180,7 +270,7 @@ export default function Study() {
               />
             ) : (phase === 'question' || phase === 'answered') && currentQuestion ? (
               <RepetitionTest 
-                questions={questions}
+                questions={studyQuestions}
                 currentQuestionIndex={currentQuestionIndex}
                 onAnswerSubmit={handleAnswerSubmit}
                 onDifficultyResponse={handleDifficultyResponse}
