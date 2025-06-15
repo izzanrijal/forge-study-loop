@@ -92,19 +92,31 @@ Deno.serve(async (req) => {
       throw new Error('GEMINI_API_KEY not found in environment variables');
     }
 
-    // First, detect if the document has predefined learning objectives
+    // Enhanced detection prompt for predefined learning objectives
     const detectionPrompt = `
-Analisis dokumen berikut dan tentukan apakah dokumen ini berisi:
-1. Tabel learning objectives yang sudah ditentukan dengan importance score (1-10)
-2. Atau dokumen biasa yang memerlukan ekstraksi learning objectives
+Analisis konten dokumen berikut dan tentukan apakah dokumen ini berisi tabel learning objectives yang sudah ditentukan dengan importance score.
+
+Cari indikator berikut:
+1. Tabel dengan kolom "Learning Objective" dan "Importance" 
+2. Format tabel markdown dengan |Learning Objective|Importance (1-10)|
+3. Daftar learning objectives dengan skor numerik 1-10
+4. Format yang mirip dengan contoh yang diberikan
 
 Dokumen: "${fileName}"
-Konten (1000 karakter pertama): "${fileContent.substring(0, 1000)}"
+Konten (2000 karakter pertama): "${fileContent.substring(0, 2000)}"
 
-Respon dengan JSON:
+Jika ditemukan tabel learning objectives, jawab dengan JSON:
 {
-  "has_predefined_objectives": true/false,
-  "type": "predefined_table" atau "regular_content"
+  "has_predefined_objectives": true,
+  "type": "predefined_table",
+  "table_found": true
+}
+
+Jika tidak ditemukan tabel learning objectives, jawab dengan JSON:
+{
+  "has_predefined_objectives": false,
+  "type": "regular_content",
+  "table_found": false
 }
 `;
 
@@ -133,47 +145,74 @@ Respon dengan JSON:
 
     const detectionData = await detectionResponse.json();
     let documentType = 'regular_content';
+    let hasTable = false;
     
     try {
       const detectionText = detectionData.candidates[0].content.parts[0].text;
+      console.log('Detection response:', detectionText);
+      
       const detectionJson = JSON.parse(detectionText.match(/\{[\s\S]*\}/)[0]);
       documentType = detectionJson.type;
+      hasTable = detectionJson.table_found;
     } catch (e) {
-      console.log('Using default document type: regular_content');
+      console.log('Detection parsing failed, using content analysis...');
+      // Fallback detection based on content patterns
+      if (fileContent.includes('Learning Objective') && fileContent.includes('Importance') && 
+          (fileContent.includes('|') || fileContent.includes('**'))) {
+        documentType = 'predefined_table';
+        hasTable = true;
+      }
     }
+
+    console.log(`Document type detected: ${documentType}, Has table: ${hasTable}`);
 
     let learningObjectives: PredefinedLearningObjective[] = [];
 
-    if (documentType === 'predefined_table') {
-      // Process document with predefined learning objectives
+    if (documentType === 'predefined_table' && hasTable) {
+      // Enhanced extraction prompt for predefined learning objectives
       const extractionPrompt = `
-Dokumen ini berisi tabel learning objectives yang sudah ditentukan beserta importance score.
+TUGAS: Ekstrak SEMUA learning objectives dari tabel yang ada dalam dokumen ini.
 
-Tugas Anda:
-1. Ekstrak semua learning objectives dari tabel
-2. Ambil importance score untuk setiap learning objective
-3. Chunk konten dokumen dan assign ke setiap learning objective yang relevan
-4. Buat struktur data yang lengkap
+DOKUMEN: "${fileName}"
+KONTEN LENGKAP:
+${fileContent}
 
-Dokumen: "${fileName}"
-Konten lengkap: "${fileContent}"
+INSTRUKSI EKSTRAKSI:
+1. Cari tabel dengan format |Learning Objective|Importance (1-10)|
+2. Ekstrak SETIAP baris learning objective dari tabel tersebut
+3. Ambil importance score yang tepat (1-10)
+4. Untuk setiap learning objective, ambil konten relevan dari dokumen untuk pembelajaran
+5. Pastikan TIDAK ADA learning objective yang terlewat
 
-Format JSON response:
+CONTOH FORMAT YANG DICARI:
+|Learning Objective|Importance (1-10)|
+|:--|:-:|
+|**Differentiate between typical angina...**|10|
+|**Recognize the classic characteristics...**|9|
+
+TUGAS CHUNKING:
+Untuk setiap learning objective yang ditemukan, cari dan kumpulkan semua konten dari dokumen yang relevan dengan topik tersebut. Konten harus cukup untuk pembelajaran mendalam (minimal 200-300 kata per learning objective).
+
+FORMAT OUTPUT JSON:
 {
   "learning_objectives": [
     {
-      "title": "Exact learning objective dari tabel",
-      "importance": 8,
-      "content_text": "Konten relevan yang di-chunk untuk LO ini (minimal 300 kata dari dokumen)"
+      "title": "Exact text dari learning objective tanpa ** formatting",
+      "importance": 10,
+      "content_text": "Konten pembelajaran yang relevan dan lengkap dari dokumen untuk topik ini"
     }
   ]
 }
 
 PENTING: 
-- Ekstrak SEMUA learning objectives dari tabel
-- Importance score harus sesuai dengan yang ada di tabel (1-10)
-- Content_text harus berisi chunk konten yang relevan dari dokumen, bukan summary
-- Pastikan setiap LO mendapat content yang substantial untuk pembelajaran
+- Ekstrak SEMUA learning objectives dari tabel, jangan sampai ada yang terlewat
+- Importance score harus sesuai dengan angka di tabel (1-10)
+- Title harus bersih tanpa markdown formatting (**) 
+- Content_text harus berisi materi pembelajaran yang substansial
+- Jika ada 20+ learning objectives di tabel, ekstrak semuanya
+- RETURN HANYA JSON, tidak ada teks tambahan
+
+MULAI EKSTRAKSI:
 `;
 
       const extractionResponse = await fetch(
@@ -190,7 +229,7 @@ PENTING:
               }]
             }],
             generationConfig: {
-              temperature: 0.3,
+              temperature: 0.2,
               topK: 40,
               topP: 0.95,
               maxOutputTokens: 8192,
@@ -200,17 +239,25 @@ PENTING:
       );
 
       const extractionData = await extractionResponse.json();
+      console.log('Extraction response received');
       
       try {
         const responseText = extractionData.candidates[0].content.parts[0].text;
+        console.log('Raw extraction response:', responseText.substring(0, 500));
+        
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsedData = JSON.parse(jsonMatch[0]);
           learningObjectives = parsedData.learning_objectives || [];
+          console.log(`Successfully extracted ${learningObjectives.length} learning objectives`);
+        } else {
+          console.error('No JSON found in response');
+          throw new Error('No valid JSON found in extraction response');
         }
       } catch (parseError) {
         console.error('Failed to parse extraction response:', parseError);
-        throw new Error('Failed to extract learning objectives from predefined table');
+        console.error('Raw response:', extractionData.candidates[0].content.parts[0].text);
+        throw new Error('Failed to extract learning objectives from predefined table - parsing error');
       }
     } else {
       // Process regular document to extract learning objectives
@@ -285,6 +332,13 @@ PENTING: Return HANYA JSON yang valid, tanpa markup atau teks tambahan.
       }
     }
 
+    // Validate that we have learning objectives
+    if (!learningObjectives || learningObjectives.length === 0) {
+      throw new Error('No learning objectives could be extracted from the document');
+    }
+
+    console.log(`Final learning objectives count: ${learningObjectives.length}`);
+
     // Get user_id from the PDF record
     const { data: pdfData, error: pdfError } = await supabaseClient
       .from('pdfs')
@@ -302,6 +356,9 @@ PENTING: Return HANYA JSON yang valid, tanpa markup atau teks tambahan.
     const insertedObjectives = [];
 
     for (const objective of learningObjectives) {
+      // Clean title from markdown formatting
+      const cleanTitle = objective.title.replace(/\*\*/g, '').trim();
+      
       // Map importance score to priority
       let priority: 'High' | 'Medium' | 'Low' = 'Medium';
       if (objective.importance >= 9) priority = 'High';
@@ -312,7 +369,7 @@ PENTING: Return HANYA JSON yang valid, tanpa markup atau teks tambahan.
         .insert({
           pdf_id: fileId,
           user_id: userId,
-          title: objective.title,
+          title: cleanTitle,
           description: `Importance Score: ${objective.importance}/10`,
           priority: priority,
           content_text: objective.content_text
@@ -386,7 +443,7 @@ PENTING: Return HANYA JSON yang valid, tanpa markup atau teks tambahan.
       })
       .eq('id', fileId);
 
-    console.log(`Successfully processed document: ${fileName}`);
+    console.log(`Successfully processed document: ${fileName} with ${insertedObjectives.length} learning objectives`);
 
     return new Response(
       JSON.stringify({
