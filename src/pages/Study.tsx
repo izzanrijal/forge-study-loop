@@ -38,7 +38,7 @@ export default function Study() {
   // Check for anonymous study parameters
   const anonymousToken = searchParams.get('anonymous_token');
   const loId = searchParams.get('lo_id');
-  const isAnonymousMode = anonymousToken && loId;
+  const isAnonymousMode = Boolean(anonymousToken && loId);
   
   // Get learning objective
   const learningObjective = isAnonymousMode 
@@ -146,13 +146,15 @@ export default function Study() {
       );
       setStudyQuestions(uniqueQuestions);
       
-      setPhase(selectedMode === 'study' ? 'reading' : 'question');
+      // Always start with reading phase - show ALL content first
+      setPhase('reading');
     } catch (error) {
       console.error('Error starting session:', error);
     }
   };
 
   const handleFinishReading = () => {
+    // After reading ALL content, go to questions
     setPhase('question');
   };
 
@@ -192,7 +194,7 @@ export default function Study() {
     if (currentQuestionIndex < studyQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer('');
-      setPhase(mode === 'study' ? 'reading' : 'question');
+      setPhase('question'); // Stay in question phase, no more reading
     } else {
       // Calculate final results
       const correctAnswers = Math.floor(studyQuestions.length * 0.8); // Mock calculation
@@ -236,8 +238,8 @@ export default function Study() {
           </div>
         )}
 
-        {/* Progress Header - Only show after mode selection */}
-        {phase !== 'mode-selection' && phase !== 'completed' && (
+        {/* Progress Header - Only show during questions */}
+        {phase === 'question' || phase === 'answered' ? (
           <div className="mb-6">
             <StudyProgress 
               learningObjective={learningObjective}
@@ -246,7 +248,7 @@ export default function Study() {
               mode={mode}
             />
           </div>
-        )}
+        ) : null}
 
         <Card className="rounded-xl shadow-md">
           <CardContent className="p-6">
@@ -263,7 +265,7 @@ export default function Study() {
                 mode={mode}
                 results={mode === 'test' ? testResults : undefined}
               />
-            ) : phase === 'reading' && mode === 'study' ? (
+            ) : phase === 'reading' ? (
               <ReadingMode 
                 learningObjective={learningObjective}
                 onFinishReading={handleFinishReading}
