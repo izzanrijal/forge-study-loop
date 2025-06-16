@@ -133,7 +133,7 @@ export function UploadCard() {
 
   return (
     <Card className="rounded-xl shadow-md hover:shadow-lg transition-shadow">
-      <CardHeader className="pb-3">
+      <CardHeader className="pt-0 pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           {uploadProgress === 100 ? (
             <CheckCircle className="w-5 h-5 text-green-500" />

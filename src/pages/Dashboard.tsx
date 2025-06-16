@@ -74,15 +74,17 @@ export default function Dashboard() {
   // Get recommended learning objectives (low mastery or high priority)
   const recommendedLOs = transformedLearningObjectives
     .filter(lo => lo.priority === "High" || lo.masteryPercent < 50)
-    .slice(0, 2);
+    .slice(0, 4); // Show up to 4 recommendations
+
+  const hasActionableItems = dueCount > 0 || recommendedLOs.length > 0;
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
+      <main className="p-4 sm:p-6 space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-2xl sm:text-3xl font-bold">
               Welcome back{userProfile?.full_name ? `, ${userProfile.full_name}` : ''}!
             </h1>
             <p className="text-muted-foreground mt-1">
@@ -90,7 +92,7 @@ export default function Dashboard() {
             </p>
           </div>
           <Link to="/upload">
-            <Button className="gap-2">
+            <Button className="gap-2 w-full sm:w-auto">
               <Plus className="w-4 h-4" />
               Upload PDF
             </Button>
@@ -98,7 +100,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total PDFs</CardTitle>
@@ -133,8 +135,8 @@ export default function Dashboard() {
             <CardContent>
               <div className="text-2xl font-bold">
                 {transformedLearningObjectives.length > 0 
-                  ? Math.round(transformedLearningObjectives.reduce((acc, lo) => acc + lo.masteryPercent, 0) / transformedLearningObjectives.length)
-                  : 0}%
+                  ? `${Math.round(transformedLearningObjectives.reduce((acc, lo) => acc + lo.masteryPercent, 0) / transformedLearningObjectives.length)}%`
+                  : 'N/A'}
               </div>
               <p className="text-xs text-muted-foreground">
                 Across all topics
@@ -144,43 +146,56 @@ export default function Dashboard() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* Left & Center Column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Today's Reviews - Only show if there are due questions */}
             {dueCount > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Today's Reviews</h2>
+              <section>
+                <h2 className="text-xl font-semibold mb-4">Today's Reviews</h2>
                 <TodaysReviewCard 
                   dueCount={dueCount} 
                   estimatedMinutes={estimatedMinutes}
                 />
-              </div>
+              </section>
             )}
 
-            {/* Recommended Learning Objectives */}
             {recommendedLOs.length > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Recommended for You</h2>
-                <div className="grid gap-4">
+              <section>
+                <h2 className="text-xl font-semibold mb-4">Recommended for You</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
                   {recommendedLOs.map((lo) => (
                     <RecommendedLOCard key={lo.id} learningObjectives={[lo]} />
                   ))}
                 </div>
-              </div>
+              </section>
+            )}
+            
+            {!hasActionableItems && (
+              <Card className="h-full flex flex-col justify-center items-center text-center p-6">
+                <CardHeader>
+                  <div className="mx-auto bg-green-100 rounded-full p-3 w-fit">
+                    <TrendingUp className="h-8 w-8 text-green-600" />
+                  </div>
+                  <CardTitle className="mt-4">All Caught Up!</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">You have no pending reviews and all your high-priority learning objectives are mastered. Great job!</p>
+                  <p className="mt-4">You can always <Link to="/upload" className="text-primary hover:underline font-semibold">upload more documents</Link> to generate new learning objectives.</p>
+                </CardContent>
+              </Card>
             )}
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <aside className="space-y-6">
             <UploadCard />
             <StreakBadgesWidget 
               streakCount={userProfile?.streak_count || 0}
               totalMasteryPoints={userProfile?.total_mastery_points || 0}
             />
-          </div>
+          </aside>
         </div>
-      </div>
+      </main>
     </Layout>
   );
 }
